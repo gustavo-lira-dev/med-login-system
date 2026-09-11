@@ -20,7 +20,7 @@ public class UserService {
     private final UserRepository userRepository;
 
     @Transactional(rollbackOn = Exception.class)
-    public UserAuthResponse CreateUser(RegisterRequest request) {
+    public UserAuthResponse registerUser(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new ConflictException("Email is already registered.");
         }
@@ -32,7 +32,7 @@ public class UserService {
         }
         User newUser = User.builder().email(request.email()).password(hashedPassword).build();
         userRepository.save(newUser);
-        return new UserAuthResponse("User successfully created", request.email());
+        return new UserAuthResponse("User successfully registered", request.email());
     }
 
     @Transactional(rollbackOn = Exception.class)
