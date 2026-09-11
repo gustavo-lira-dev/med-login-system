@@ -3,7 +3,7 @@ spring:
     name: MedPlatform
 
   flyway:
-    enabled: false
+    enabled: true
 
   threads:
     virtual:
@@ -13,6 +13,6 @@ spring:
     hibernate:
       # ddl-auto: update
       # ddl-auto: create
-      #ddl-auto: validate # Validates
-      ddl-auto: none
+      ddl-auto: validate # Validates
+      #ddl-auto: none
       # ddl-auto: delete

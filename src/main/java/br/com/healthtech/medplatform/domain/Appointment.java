@@ -8,7 +8,7 @@ import org.hibernate.proxy.HibernateProxy;
 import java.util.Objects;
 
 @Entity
-@Table(name = "appointment")
+@Table(name = "tb_appointments")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,7 +18,7 @@ public class Appointment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "appointment_seq")
-    @SequenceGenerator(name = "appointment_seq", sequenceName = "seq_appointment_id")
+    @SequenceGenerator(name = "appointment_seq", sequenceName = "seq_appointment_id", allocationSize = 1)
     private Long id;
 
     @Enumerated(EnumType.STRING)
