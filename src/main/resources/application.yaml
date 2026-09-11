@@ -4,10 +4,24 @@ spring:
 
   flyway:
     enabled: true
+    baseline-on-migrate: true
 
   threads:
     virtual:
       enabled: true
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: AuthHikariCP
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1800000
+      connection-timeout: 20000
 
   jpa:
     hibernate:
@@ -16,3 +30,13 @@ spring:
       ddl-auto: validate # Validates
       #ddl-auto: none
       # ddl-auto: delete
+
+      show-sql: true
+      format-sql: true
+      use-sql-comments: true
+      jdbc:
+        batch_size: 25 # Optimizes databank sequences
+        order_inserts: true
+        order_updates: true
+
+
