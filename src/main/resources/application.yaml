@@ -34,9 +34,29 @@ spring:
       show-sql: true
       format-sql: true
       use-sql-comments: true
+      open-in-view: false
       jdbc:
         batch_size: 25 # Optimizes databank sequences
         order_inserts: true
         order_updates: true
 
+  kafka:
+    bootstrap-servers: kafka-broker:29092
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: 1 # Acknowledgment from leader is enough for fast logging
+      retries: 3
+      properties:
+        linger.ms: 10
+        batch.size: 16400 # 16KB batch size before sending to broker
+
+    consumer:
+      group-id: auth-logger-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
 
