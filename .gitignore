@@ -35,4 +35,5 @@ build/
 ### Project Ignore Config ###
 .env
 .env.local
+**/TestController.java
 /db/data/
