@@ -6,6 +6,7 @@ import br.com.healthtech.medplatform.exception.throwables.NotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -36,6 +37,21 @@ public class GlobalExceptionHandler {
                 fieldErrors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleMissingBody(
+            HttpMessageNotReadableException ex,
+            HttpServletRequest request) {
+
+        var errorResponse = new ErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage(),
+                "BAD REQUEST - MISSING BODY",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
     // ============================================================================
     // 404 Not Found Handlers
     // ============================================================================

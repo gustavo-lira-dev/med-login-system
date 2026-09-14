@@ -23,6 +23,18 @@ spring:
       max-lifetime: 1800000
       connection-timeout: 20000
 
+  logging:
+    pattern:
+      console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    level:
+      root: INFO
+      org.hibernate.SQL: DEBUG
+      org.hibernate.orm.results: WARN
+
+      # Set to 'INFO' or turn into a comment line/block to receive kafka and spring basic info again.
+      org.apache.kafka.clients: WARN
+      org.springframework.kafka.core: WARN
+
   jpa:
     hibernate:
       # ddl-auto: update
