@@ -1,11 +1,12 @@
 package br.com.healthtech.medplatform.domain;
 
 import br.com.healthtech.medplatform.domain.enums.UserRole;
-import br.com.healthtech.medplatform.dto.request.RegisterRequest;
+import br.com.healthtech.medplatform.dto.request.RegisterUserRequest;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.proxy.HibernateProxy;
 
+import java.util.List;
 import java.util.Objects;
 
 @Entity
@@ -32,13 +33,6 @@ public class User {
     private UserRole role;
 
 
-
-
-    public User (RegisterRequest request) {
-        this.email = request.email();
-        this.password = request.password();
-        this.role = UserRole.USER;
-    }
 
 
     @Override

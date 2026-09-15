@@ -1,7 +1,7 @@
 package br.com.healthtech.medplatform.service;
 
 import br.com.healthtech.medplatform.domain.User;
-import br.com.healthtech.medplatform.dto.request.RegisterRequest;
+import br.com.healthtech.medplatform.dto.request.RegisterUserRequest;
 import br.com.healthtech.medplatform.dto.response.UserAuthResponse;
 import br.com.healthtech.medplatform.exception.throwables.ConflictException;
 import br.com.healthtech.medplatform.exception.throwables.NotFoundException;
@@ -39,7 +39,7 @@ class UserServiceTest {
         @DisplayName("Should register a new user successfully when email is unique")
         void register_Success() {
             // Arrange
-            var request = new RegisterRequest("test@example.com", "securePassword123");
+            var request = new RegisterUserRequest("test@example.com", "securePassword123");
             when(userRepository.existsByEmail(request.email())).thenReturn(false);
 
             // Act
@@ -62,7 +62,7 @@ class UserServiceTest {
         @DisplayName("Should throw exception during registration when email already exists")
         void register_ThrowsException_WhenEmailExists() {
             // Arrange
-            var request = new RegisterRequest("existing@example.com", "password123");
+            var request = new RegisterUserRequest("existing@example.com", "password123");
             when(userRepository.existsByEmail(request.email())).thenReturn(true);
 
             // Act & Assert
@@ -91,7 +91,7 @@ class UserServiceTest {
                     .password(hashedPassword)
                     .build();
 
-            var request = new RegisterRequest("user@example.com", rawPassword);
+            var request = new RegisterUserRequest("user@example.com", rawPassword);
             when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
 
             // Act
@@ -107,7 +107,7 @@ class UserServiceTest {
         @DisplayName("Should throw exception during login when user is not found")
         void login_ThrowsException_WhenUserNotFound() {
             // Arrange
-            var request = new RegisterRequest("unknown@example.com", "anyPassword");
+            var request = new RegisterUserRequest("unknown@example.com", "anyPassword");
             when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
 
             // Act & Assert
@@ -131,7 +131,7 @@ class UserServiceTest {
                     .password(hashedPassword)
                     .build();
 
-            var request = new RegisterRequest("user@example.com", wrongPassword);
+            var request = new RegisterUserRequest("user@example.com", wrongPassword);
             when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
 
             // Act & Assert

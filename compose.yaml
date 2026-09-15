@@ -47,6 +47,7 @@ services:
     ports:
       - "8085:8085"
     environment:
+      MICRONAUT_SECURITY_TOKEN_JWT_SIGNATURES_SECRET_GENERATOR_SECRET: "please_change_me_to_a_long_random_string_for_production"
       AKHQ_CONFIGURATION: |
         akhq:
           connections:

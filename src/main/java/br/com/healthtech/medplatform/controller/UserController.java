@@ -1,8 +1,7 @@
 package br.com.healthtech.medplatform.controller;
 
-import br.com.healthtech.medplatform.dto.request.RegisterRequest;
+import br.com.healthtech.medplatform.dto.request.RegisterUserRequest;
 import br.com.healthtech.medplatform.dto.response.UserAuthResponse;
-import br.com.healthtech.medplatform.repository.UserRepository;
 import br.com.healthtech.medplatform.service.UserService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -23,14 +22,14 @@ public class UserController {
 
     @PostMapping
     @RequestMapping("/register")
-    public ResponseEntity<UserAuthResponse> registerUser(@RequestBody @Valid RegisterRequest request) {
+    public ResponseEntity<UserAuthResponse> registerUser(@RequestBody @Valid RegisterUserRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(userService.registerUser(request));
     }
 
     @PostMapping
     @RequestMapping("/login")
-    public ResponseEntity<UserAuthResponse> login(@RequestBody @Valid RegisterRequest request) {
+    public ResponseEntity<UserAuthResponse> login(@RequestBody @Valid RegisterUserRequest request) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(userService.login(request));
     }

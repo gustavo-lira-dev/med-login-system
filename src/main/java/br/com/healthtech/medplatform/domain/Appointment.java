@@ -1,10 +1,12 @@
 package br.com.healthtech.medplatform.domain;
 
 import br.com.healthtech.medplatform.domain.enums.AppointmentStatus;
+import br.com.healthtech.medplatform.dto.request.RegisterUserRequest;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.proxy.HibernateProxy;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Entity
@@ -24,8 +26,19 @@ public class Appointment {
     @Enumerated(EnumType.STRING)
     private AppointmentStatus status;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "client_id")
+    private User client;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "medic_id")
+    private User medic;
 
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime madeDate;
+
+    @Column(nullable = false)
+    private LocalDateTime scheduledDate;
 
 
     @Override
