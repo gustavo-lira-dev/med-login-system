@@ -26,7 +26,7 @@ CREATE TABLE tb_users (
                         password VARCHAR(255) NOT NULL,
                         role VARCHAR(15),
 
-                        CONSTRAINT chk_role CHECK (role IN ('USER', 'ADMIN')),
+                        CONSTRAINT chk_role CHECK (role IN ('CLIENT', 'MEDIC', 'ADMIN')),
                         CONSTRAINT pk_users PRIMARY KEY (id),
                         CONSTRAINT uk_users_email UNIQUE (email)
 );

@@ -1,6 +1,7 @@
 package br.com.healthtech.medplatform.service;
 
 import br.com.healthtech.medplatform.domain.User;
+import br.com.healthtech.medplatform.domain.enums.UserRole;
 import br.com.healthtech.medplatform.dto.request.RegisterUserRequest;
 import br.com.healthtech.medplatform.dto.response.UserAuthResponse;
 import br.com.healthtech.medplatform.exception.throwables.ConflictException;
@@ -38,13 +39,13 @@ public class UserService {
         return new UserAuthResponse("User successfully logged in", request.email());
     }
 
-    private static User create(RegisterUserRequest request) {
+    private User create(RegisterUserRequest request) {
         String hashedPassword;
         try {
             hashedPassword = BCrypt.hashpw(request.password(), BCrypt.gensalt());
         } catch (IllegalArgumentException e) {
             throw new InternalServerErrorException(e.getMessage());
         }
-        return User.builder().email(request.email()).password(hashedPassword).build();
+        return User.builder().email(request.email()).password(hashedPassword).role(UserRole.CLIENT).build();
     }
 }

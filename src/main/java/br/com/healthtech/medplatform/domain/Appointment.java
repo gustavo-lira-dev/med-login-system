@@ -1,7 +1,6 @@
 package br.com.healthtech.medplatform.domain;
 
 import br.com.healthtech.medplatform.domain.enums.AppointmentStatus;
-import br.com.healthtech.medplatform.dto.request.RegisterUserRequest;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.proxy.HibernateProxy;

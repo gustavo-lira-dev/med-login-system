@@ -1,12 +1,10 @@
 package br.com.healthtech.medplatform.domain;
 
 import br.com.healthtech.medplatform.domain.enums.UserRole;
-import br.com.healthtech.medplatform.dto.request.RegisterUserRequest;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.proxy.HibernateProxy;
 
-import java.util.List;
 import java.util.Objects;
 
 @Entity
