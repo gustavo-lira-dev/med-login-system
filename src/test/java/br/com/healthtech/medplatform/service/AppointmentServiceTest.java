@@ -8,6 +8,7 @@ import br.com.healthtech.medplatform.exception.throwables.ConflictException;
 import br.com.healthtech.medplatform.exception.throwables.NotFoundException;
 import br.com.healthtech.medplatform.repository.AppointmentRepository;
 import br.com.healthtech.medplatform.repository.UserRepository;
+import br.com.healthtech.medplatform.service.serviceclass.AppointmentService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

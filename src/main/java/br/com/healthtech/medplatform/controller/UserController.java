@@ -2,7 +2,7 @@ package br.com.healthtech.medplatform.controller;
 
 import br.com.healthtech.medplatform.dto.request.RegisterUserRequest;
 import br.com.healthtech.medplatform.dto.response.UserAuthResponse;
-import br.com.healthtech.medplatform.service.UserService;
+import br.com.healthtech.medplatform.service.serviceclass.UserService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;

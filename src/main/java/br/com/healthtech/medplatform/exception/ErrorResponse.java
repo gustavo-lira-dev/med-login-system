@@ -4,13 +4,9 @@ import jakarta.annotation.Nullable;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Type of response DTO for throwable.
- */
-
+/// Type of response DTO for throwable.
 public record ErrorResponse(
         LocalDateTime timestamp,
         HttpStatus status,

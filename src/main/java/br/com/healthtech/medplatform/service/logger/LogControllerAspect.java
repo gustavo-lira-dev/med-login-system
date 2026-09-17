@@ -28,46 +28,30 @@ public class LogControllerAspect {
         kafkaLogProducer.sendLog(infoLog);
     }
 
-    // 2. CRITICAL ERRORS (ERROR): Triggered automatically when an unexpected/system exception is thrown.
-    // Excludes IllegalArgumentException since it represents handled business warnings.
-    @AfterThrowing(pointcut = "within(br.com.healthtech.medplatform.controller..*)", throwing = "exception")
-    public void logCriticalError(JoinPoint joinPoint, Throwable exception) {
-        if (exception instanceof IllegalArgumentException) {
-            return; // Aspect-Handled by 'logBusinessWarning' method below.
-        }
-
-        String methodName = joinPoint.getSignature().getName();
-        String className = joinPoint.getTarget().getClass().getSimpleName();
-
-        LogMessage errorLog = LogMessage.error(
-                "Critical API execution failure: " + exception.getMessage(),
-                methodName,
-                className
-        );
-
-        kafkaLogProducer.sendLog(errorLog);
-    }
-
-    // 3. MID-TERMS / BUSINESS WARNINGS (WARN): Intercepts and logs handled business validations.
+    // 2. WARN and ERROR loggers: will handle any exception, treated or not, and convert a message for the log.
     @Around("within(br.com.healthtech.medplatform.controller..*)")
-    public Object logBusinessWarning(ProceedingJoinPoint joinPoint) throws Throwable {
+    public Object logErrorsAndWarnings(ProceedingJoinPoint joinPoint) throws Throwable {
         try {
             return joinPoint.proceed();
         } catch (IllegalArgumentException ex) {
-            String methodName = joinPoint.getSignature().getName();
-            String className = joinPoint.getTarget().getClass().getSimpleName();
-
-            LogMessage warnLog = LogMessage.warn(
+            logToKafka(joinPoint, LogMessage.warn(
                     "BUSINESS_VIOLATION",
                     "Request rejected: " + ex.getMessage(),
-                    className,
-                    methodName
-            );
-
-            kafkaLogProducer.sendLog(warnLog);
-
-            // Re-throw the exception so the GlobalExceptionHandler can process the HTTP payload
+                    joinPoint.getTarget().getClass().getSimpleName(),
+                    joinPoint.getSignature().getName()
+            ));
+            throw ex;
+        } catch (Throwable ex) {
+            logToKafka(joinPoint, LogMessage.error(
+                    "Critical API execution failure: " + ex.getMessage(),
+                    joinPoint.getSignature().getName(),
+                    joinPoint.getTarget().getClass().getSimpleName()
+            ));
             throw ex;
         }
+    }
+
+    private void logToKafka(ProceedingJoinPoint joinPoint, LogMessage logMessage) {
+        kafkaLogProducer.sendLog(logMessage);
     }
 }

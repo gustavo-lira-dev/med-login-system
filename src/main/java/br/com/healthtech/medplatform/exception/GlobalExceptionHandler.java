@@ -1,5 +1,6 @@
 package br.com.healthtech.medplatform.exception;
 
+import br.com.healthtech.medplatform.exception.throwables.BadRequestException;
 import br.com.healthtech.medplatform.exception.throwables.ConflictException;
 import br.com.healthtech.medplatform.exception.throwables.InternalServerErrorException;
 import br.com.healthtech.medplatform.exception.throwables.NotFoundException;
@@ -21,6 +22,16 @@ public class GlobalExceptionHandler {
     // ============================================================================
     // 400 Bad Request Handlers
     // ============================================================================
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ErrorResponse> handleBadRequestException(BadRequestException ex, HttpServletRequest request) {
+        var errorResponse = new ErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage(),
+                "BAD REQUEST",
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex, HttpServletRequest request) {

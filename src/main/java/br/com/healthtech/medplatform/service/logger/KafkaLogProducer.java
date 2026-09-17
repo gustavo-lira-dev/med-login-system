@@ -7,6 +7,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
+// Service class responsible for collecting logs sent to the dedicated kafka topic.
 @Slf4j
 @Service
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -16,7 +17,6 @@ public class KafkaLogProducer {
     private final ObjectMapper objectMapper;
 
     private static final String TOPIC = "auth-events";
-
 
     // Publishes a log message asynchronously to the Kafka broker.
     public void sendLog(LogMessage logMessage) {
@@ -38,6 +38,4 @@ public class KafkaLogProducer {
             log.error("[-] Serialization error while preparing Kafka log for method: {}", logMessage.method(), e);
         }
     }
-
-
 }

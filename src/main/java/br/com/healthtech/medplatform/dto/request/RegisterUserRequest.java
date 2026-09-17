@@ -1,12 +1,10 @@
 package br.com.healthtech.medplatform.dto.request;
 
+import br.com.healthtech.medplatform.domain.enums.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-
-/**
- * Data Transfer Object representing a user registration payload.
- */
 
 public record RegisterUserRequest(
     @NotBlank(message = "Email field cannot be empty.")
@@ -16,6 +14,9 @@ public record RegisterUserRequest(
 
     @NotBlank(message = "Password field cannot be empty.")
     @Size(min = 6, max = 32, message = "Password field must have between 6 and 32 characters.")
-    String password
+    String password,
+
+    @NotNull(message = "Field must not be null")
+    UserRole role
     )
 {}

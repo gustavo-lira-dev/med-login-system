@@ -1,7 +1,6 @@
-package br.com.healthtech.medplatform.service;
+package br.com.healthtech.medplatform.service.serviceclass;
 
 import br.com.healthtech.medplatform.domain.User;
-import br.com.healthtech.medplatform.domain.enums.UserRole;
 import br.com.healthtech.medplatform.dto.request.RegisterUserRequest;
 import br.com.healthtech.medplatform.dto.response.UserAuthResponse;
 import br.com.healthtech.medplatform.exception.throwables.ConflictException;
@@ -11,11 +10,10 @@ import br.com.healthtech.medplatform.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.mindrot.jbcrypt.BCrypt;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-@AllArgsConstructor(onConstructor = @__(@Autowired))
+@AllArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
@@ -46,6 +44,6 @@ public class UserService {
         } catch (IllegalArgumentException e) {
             throw new InternalServerErrorException(e.getMessage());
         }
-        return User.builder().email(request.email()).password(hashedPassword).role(UserRole.CLIENT).build();
+        return User.builder().email(request.email()).password(hashedPassword).role(request.role()).build();
     }
 }
