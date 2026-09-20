@@ -10,12 +10,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/appointments")
+@RequestMapping("/api/v1/appointment")
 @RequiredArgsConstructor
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
 
+//    @GetMapping("/{id}")
+//    public ResponseEntity<>
 
     @PostMapping("/register")
     public ResponseEntity<AppointmentResponse> schedule(@RequestBody @Valid RequestAppointment request) {

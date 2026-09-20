@@ -22,7 +22,6 @@ public class LogServiceAspect {
         long startTime = System.currentTimeMillis();
 
         try {
-            // Executes the actual service method and captures its return value
             Object result = joinPoint.proceed();
 
             long executionTime = System.currentTimeMillis() - startTime;
@@ -33,7 +32,6 @@ public class LogServiceAspect {
                     className,
                     methodName
             ));
-
             // 2. Checks and logs performance degradation (Delay)
             if (executionTime > MAX_EXECUTION_TIME_MS) {
                 kafkaLogProducer.sendLog(LogMessage.warn(

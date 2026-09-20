@@ -2,17 +2,21 @@ package br.com.healthtech.medplatform.service;
 
 import br.com.healthtech.medplatform.domain.Appointment;
 import br.com.healthtech.medplatform.domain.User;
+import br.com.healthtech.medplatform.domain.enums.UserRole;
 import br.com.healthtech.medplatform.dto.request.RequestAppointment;
 import br.com.healthtech.medplatform.dto.response.AppointmentResponse;
+import br.com.healthtech.medplatform.exception.throwables.BadRequestException;
 import br.com.healthtech.medplatform.exception.throwables.ConflictException;
 import br.com.healthtech.medplatform.exception.throwables.NotFoundException;
 import br.com.healthtech.medplatform.repository.AppointmentRepository;
 import br.com.healthtech.medplatform.repository.UserRepository;
 import br.com.healthtech.medplatform.service.serviceclass.AppointmentService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -20,12 +24,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 @DisplayName("Appointment Service Unit Tests")
+@ExtendWith(MockitoExtension.class)
 class AppointmentServiceTest {
 
     @Mock
@@ -37,111 +42,107 @@ class AppointmentServiceTest {
     @InjectMocks
     private AppointmentService appointmentService;
 
-    @Nested
-    @DisplayName("Register Appointment Flow")
-    class RegisterAppointmentFlow {
+    @Captor
+    private ArgumentCaptor<Appointment> appointmentCaptor;
 
-        @Test
-        @DisplayName("Should schedule an appointment successfully when date is available and users exist")
-        void registerAppointment_Success() {
-            // Arrange
-            Long clientId = 1L;
-            Long medicId = 2L;
-            String medicEmail = "doctor.house@healthtech.com";
-            LocalDateTime scheduledDate = LocalDateTime.now().plusDays(2);
-            var request = new RequestAppointment(scheduledDate, medicId, clientId);
+    private Long clientId;
+    private Long medicId;
+    private LocalDateTime scheduledDate;
+    private RequestAppointment requestAppointment;
+    private User client;
+    private User medic;
 
-            var clientUser = User.builder().id(clientId).email("patient@test.com").build();
-            var medicUser = User.builder().id(medicId).email(medicEmail).build();
+    @BeforeEach
+    void setUp() {
+        clientId = 1L;
+        medicId = 2L;
+        scheduledDate = LocalDateTime.now().plusDays(1);
 
-            // Mocking business rule check (Both actors are free)
-            when(appointmentRepository.existsByMedicIdAndScheduledDate(medicId, scheduledDate)).thenReturn(false);
-            when(appointmentRepository.existsByClientIdAndScheduledDate(clientId, scheduledDate)).thenReturn(false);
+        requestAppointment = new RequestAppointment(scheduledDate, medicId, clientId);
 
-            // Mocking database retrieval (Each user found ONCE)
-            when(userRepository.findById(clientId)).thenReturn(Optional.of(clientUser));
-            when(userRepository.findById(medicId)).thenReturn(Optional.of(medicUser));
+        client = new User();
+        client.setId(clientId);
+        client.setRole(UserRole.CLIENT);
 
-            // Act
-            AppointmentResponse response = appointmentService.registerAppointment(request);
+        medic = new User();
+        medic.setId(medicId);
+        medic.setRole(UserRole.MEDIC);
+        medic.setEmail("doctor@hospital.com");
+    }
 
-            // Assert
-            assertNotNull(response);
-            assertEquals(scheduledDate, response.scheduledDate());
-            assertEquals(medicEmail, medicUser.getEmail()); //
+    @Test
+    void registerAppointmentShouldSaveAndReturnResponseWhenSuccessful() {
+        when(userRepository.findById(clientId)).thenReturn(Optional.of(client));
+        when(userRepository.findById(medicId)).thenReturn(Optional.of(medic));
+        when(appointmentRepository.existsByMedicIdAndScheduledDate(medicId, scheduledDate)).thenReturn(false);
+        when(appointmentRepository.existsByClientIdAndScheduledDate(clientId, scheduledDate)).thenReturn(false);
 
-            // Verify database constraints and single I/O calls
-            verify(userRepository, times(1)).findById(clientId);
-            verify(userRepository, times(1)).findById(medicId);
-            verify(appointmentRepository, times(1)).save(any(Appointment.class));
-        }
+        AppointmentResponse response = appointmentService.registerAppointment(requestAppointment);
 
-        @Test
-        @DisplayName("Should throw ConflictException and completely bypass user fetching when date is compromised")
-        void registerAppointment_ThrowsConflict_WhenMedicOrClientIsBusy() {
-            // Arrange
-            Long clientId = 1L;
-            Long medicId = 2L;
-            LocalDateTime scheduledDate = LocalDateTime.now().plusDays(1);
-            var request = new RequestAppointment(scheduledDate, medicId, clientId);
+        verify(appointmentRepository).save(appointmentCaptor.capture());
+        Appointment savedAppointment = appointmentCaptor.getValue();
 
-            // Mocking timetable collision
-            when(appointmentRepository.existsByMedicIdAndScheduledDate(medicId, scheduledDate)).thenReturn(true);
+        assertThat(response).isNotNull();
+        assertThat(response.scheduledDate()).isEqualTo(scheduledDate);
+        assertThat(response.medicEmail()).isEqualTo("doctor@hospital.com");
+        assertThat(savedAppointment.getClient()).isEqualTo(client);
+        assertThat(savedAppointment.getMedic()).isEqualTo(medic);
+    }
 
-            // Act & Assert
-            assertThrows(ConflictException.class, () -> appointmentService.registerAppointment(request));
+    @Test
+    void registerAppointmentShouldThrowNotFoundExceptionWhenClientDoesNotExist() {
+        when(userRepository.findById(clientId)).thenReturn(Optional.empty());
 
-            // Core Quality Assurance: Ensure NO unnecessary user queries are executed if date is blocked
-            verify(userRepository, never()).findById(anyLong());
-            verify(appointmentRepository, never()).save(any(Appointment.class));
-        }
+        assertThatThrownBy(() -> appointmentService.registerAppointment(requestAppointment))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Client not found");
 
-        @Test
-        @DisplayName("Should throw NotFoundException when client does not exist in database")
-        void registerAppointment_ThrowsNotFound_WhenClientMissing() {
-            // Arrange
-            Long clientId = 99L;
-            Long medicId = 2L;
-            LocalDateTime scheduledDate = LocalDateTime.now().plusDays(1);
-            var request = new RequestAppointment(scheduledDate, medicId, clientId);
+        verify(appointmentRepository, never()).save(any(Appointment.class));
+    }
 
-            when(appointmentRepository.existsByMedicIdAndScheduledDate(medicId, scheduledDate)).thenReturn(false);
-            when(appointmentRepository.existsByClientIdAndScheduledDate(clientId, scheduledDate)).thenReturn(false);
+    @Test
+    void registerAppointmentShouldThrowBadRequestExceptionWhenRolesAreInvalid() {
+        client.setRole(UserRole.MEDIC);
+        when(userRepository.findById(clientId)).thenReturn(Optional.of(client));
+        when(userRepository.findById(medicId)).thenReturn(Optional.of(medic));
 
-            // Client missing
-            when(userRepository.findById(clientId)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> appointmentService.registerAppointment(requestAppointment))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Role fields are invalid");
 
-            // Act & Assert
-            assertThrows(NotFoundException.class, () -> appointmentService.registerAppointment(request));
+        verify(appointmentRepository, never()).save(any(Appointment.class));
+    }
 
-            // Medic should never be searched if Client step fails early
-            verify(userRepository, never()).findById(medicId);
-            verify(appointmentRepository, never()).save(any(Appointment.class));
-        }
+    @Test
+    void registerAppointmentShouldThrowConflictExceptionWhenDateIsAlreadyCompromised() {
+        when(userRepository.findById(clientId)).thenReturn(Optional.of(client));
+        when(userRepository.findById(medicId)).thenReturn(Optional.of(medic));
+        when(appointmentRepository.existsByMedicIdAndScheduledDate(medicId, scheduledDate)).thenReturn(true);
 
-        @Test
-        @DisplayName("Should throw NotFoundException when medic does not exist in database")
-        void registerAppointment_ThrowsNotFound_WhenMedicMissing() {
-            // Arrange
-            Long clientId = 1L;
-            Long medicId = 88L;
-            LocalDateTime scheduledDate = LocalDateTime.now().plusDays(1);
-            var request = new RequestAppointment(scheduledDate, medicId, clientId);
+        assertThatThrownBy(() -> appointmentService.registerAppointment(requestAppointment))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("This date and time are already compromised or invalid");
 
-            var clientUser = User.builder().id(clientId).email("patient@test.com").build();
+        verify(appointmentRepository, never()).save(any(Appointment.class));
+    }
 
-            when(appointmentRepository.existsByMedicIdAndScheduledDate(medicId, scheduledDate)).thenReturn(false);
-            when(appointmentRepository.existsByClientIdAndScheduledDate(clientId, scheduledDate)).thenReturn(false);
+    @Test
+    void editAppointmentShouldUpdateAndReturnResponseWhenSuccessful() {
+        Long appointmentId = 10L;
+        Appointment existingAppointment = new Appointment();
 
-            // Client found, but Medic missing
-            when(userRepository.findById(clientId)).thenReturn(Optional.of(clientUser));
-            when(userRepository.findById(medicId)).thenReturn(Optional.empty());
+        when(appointmentRepository.findById(appointmentId)).thenReturn(Optional.of(existingAppointment));
+        when(appointmentRepository.existsByMedicIdAndScheduledDate(medicId, scheduledDate)).thenReturn(false);
+        when(appointmentRepository.existsByClientIdAndScheduledDate(clientId, scheduledDate)).thenReturn(false);
+        when(userRepository.findById(clientId)).thenReturn(Optional.of(client));
+        when(userRepository.findById(medicId)).thenReturn(Optional.of(medic));
 
-            // Act & Assert
-            assertThrows(NotFoundException.class, () -> appointmentService.registerAppointment(request));
+        AppointmentResponse response = appointmentService.editAppointment(appointmentId, requestAppointment);
 
-            verify(appointmentRepository, never()).save(any(Appointment.class));
-        }
+        verify(appointmentRepository).save(existingAppointment);
+        assertThat(response).isNotNull();
+        assertThat(existingAppointment.getClient()).isEqualTo(client);
+        assertThat(existingAppointment.getMedic()).isEqualTo(medic);
     }
 }
 
