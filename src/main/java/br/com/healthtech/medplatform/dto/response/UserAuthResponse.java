@@ -6,5 +6,7 @@ package br.com.healthtech.medplatform.dto.response;
 
 public record UserAuthResponse(
         String message,
-        String email)
-{}
+        String email,
+        String token
+) {}
+

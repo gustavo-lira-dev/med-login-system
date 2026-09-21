@@ -23,34 +23,36 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final SecurityFilter securityFilter; // Injeta o nosso filtro (Peça 2)
+    private final SecurityFilter securityFilter;
 
     /// This method is basically the rules of how the API requisition flow will work, how and where it will be filtered.
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                // Disables CSRF protection, since REST APIs with JWTs aren't vulnerable to such threats.
                 .csrf(AbstractHttpConfigurer::disable)
 
-                // Grants that no session will be stored into the servers memory; each one will be unique for every requisition
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // Defines the access level for the endpoints.
                 .authorizeHttpRequests(authorize -> authorize
-                        // Login route is public, anyone can, and should, access
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
+                        .requestMatchers("/error").permitAll() // Standard spring error endpoint also liberated
 
-                        // Test endpoints won't require authentication for fast testing without handmade tokens
+                        // Login and Register routes liberated
+                        .requestMatchers(HttpMethod.POST, "/api/v1/user/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/user/register").permitAll()
+
+                        // Tests endpoints are liberated
+                        .requestMatchers("/api/v1/test").permitAll()
                         .requestMatchers("/api/v1/test/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/test/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/test/**").permitAll()
 
-                        // Every schedule route will demand login
+                        // Route that needs authentication
                         .requestMatchers("/api/v1/appointments/**").authenticated()
 
-                        // Every other route will also require login.
+                        // Any other route
                         .anyRequest().authenticated()
                 )
 
-                // Puts the SecurityFilter authentication before the standard Spring filter.
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
 
                 .build();

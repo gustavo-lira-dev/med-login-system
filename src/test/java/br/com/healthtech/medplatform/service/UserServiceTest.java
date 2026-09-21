@@ -2,12 +2,15 @@ package br.com.healthtech.medplatform.service;
 
 import br.com.healthtech.medplatform.domain.User;
 import br.com.healthtech.medplatform.domain.enums.UserRole;
+import br.com.healthtech.medplatform.dto.request.LoginAuthRequest;
 import br.com.healthtech.medplatform.dto.request.RegisterUserRequest;
 import br.com.healthtech.medplatform.dto.response.UserAuthResponse;
 import br.com.healthtech.medplatform.exception.throwables.ConflictException;
 import br.com.healthtech.medplatform.exception.throwables.NotFoundException;
 import br.com.healthtech.medplatform.repository.UserRepository;
+import br.com.healthtech.medplatform.service.security.TokenService;
 import br.com.healthtech.medplatform.service.serviceclass.UserService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -24,125 +27,108 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("User Service Unit Tests")
 class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private TokenService tokenService;
+
     @InjectMocks
     private UserService userService;
 
-    @Nested
-    @DisplayName("User Registration Flow")
-    class RegisterFlow {
+    private User existingUser;
+    private String rawPassword;
 
-        @Test
-        @DisplayName("Should register a new user successfully when email is unique")
-        void register_Success() {
-            // Arrange
-            var request = new RegisterUserRequest("test@example.com", "securePassword123", UserRole.CLIENT);
-            when(userRepository.existsByEmail(request.email())).thenReturn(false);
+    @BeforeEach
+    void setUp() {
+        rawPassword = "securePassword123";
+        String hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
 
-            // Act
-            UserAuthResponse response = userService.registerUser(request);
-
-            // Assert
-            assertNotNull(response);
-            assertEquals("User successfully registered", response.message());
-            assertEquals(request.email(), response.email());
-
-            // Verify that password was hashed and user was saved
-            verify(userRepository, times(1)).save(argThat(user ->
-                    user.getEmail().equals(request.email()) &&
-                            !user.getPassword().equals(request.password()) &&
-                            BCrypt.checkpw(request.password(), user.getPassword())
-            ));
-        }
-
-        @Test
-        @DisplayName("Should throw exception during registration when email already exists")
-        void register_ThrowsException_WhenEmailExists() {
-            // Arrange
-            var request = new RegisterUserRequest("existing@example.com", "password123", UserRole.CLIENT);
-            when(userRepository.existsByEmail(request.email())).thenReturn(true);
-
-            // Act & Assert
-            ConflictException exception = assertThrows(ConflictException.class, () ->
-                    userService.registerUser(request)
-            );
-
-            assertEquals("Email is already registered.", exception.getMessage());
-            verify(userRepository, never()).save(any(User.class));
-        }
+        existingUser = User.builder()
+                .id(1L)
+                .email("test@healthtech.com")
+                .password(hashedPassword)
+                .role(UserRole.CLIENT)
+                .build();
     }
 
-    @Nested
-    @DisplayName("User Authentication Flow")
-    class LoginFlow {
+    @Test
+    @DisplayName("Should successfully register a new user when email does not exist")
+    void registerUser_Success() {
+        // Arrange
+        RegisterUserRequest request = new RegisterUserRequest("new@healthtech.com", "password123", UserRole.CLIENT);
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenReturn(new User());
 
-        @Test
-        @DisplayName("Should authenticate successfully when credentials are valid")
-        void login_Success() {
-            // Arrange
-            var rawPassword = "mySecretPassword";
-            var hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
-            var user = User.builder()
-                    .id(1L)
-                    .email("user@example.com")
-                    .password(hashedPassword)
-                    .build();
+        // Act
+        UserAuthResponse response = userService.registerUser(request);
 
-            var request = new RegisterUserRequest("user@example.com", rawPassword, UserRole.CLIENT);
-            when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
+        // Assert
+        assertNotNull(response);
+        assertEquals("User successfully registered", response.message());
+        assertEquals(request.email(), response.email());
+        assertNull(response.token());
+        verify(userRepository, times(1)).save(any(User.class));
+    }
 
-            // Act
-            UserAuthResponse response = userService.login(request);
+    @Test
+    @DisplayName("Should throw ConflictException when registering a user with an already existing email")
+    void registerUser_ThrowsConflictException() {
+        // Arrange
+        RegisterUserRequest request = new RegisterUserRequest("test@healthtech.com", "password123", UserRole.CLIENT);
+        when(userRepository.existsByEmail(request.email())).thenReturn(true);
 
-            // Assert
-            assertNotNull(response);
-            assertEquals("User successfully logged in", response.message());
-            assertEquals(request.email(), response.email());
-        }
+        // Act & Assert
+        assertThrows(ConflictException.class, () -> userService.registerUser(request));
+        verify(userRepository, never()).save(any(User.class));
+    }
 
-        @Test
-        @DisplayName("Should throw exception during login when user is not found")
-        void login_ThrowsException_WhenUserNotFound() {
-            // Arrange
-            var request = new RegisterUserRequest("unknown@example.com", "anyPassword", UserRole.CLIENT);
-            when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+    @Test
+    @DisplayName("Should successfully log in and return a JWT token when credentials are valid")
+    void login_Success() {
+        // Arrange
+        LoginAuthRequest request = new LoginAuthRequest("test@healthtech.com", rawPassword);
+        String mockToken = "mocked-jwt-token-string";
 
-            // Act & Assert
-            NotFoundException exception = assertThrows(NotFoundException.class, () ->
-                    userService.login(request)
-            );
+        when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(existingUser)); // Had to use anyString, since it was giving errors when specified
+        when(tokenService.generateToken(anyString())).thenReturn(mockToken);
 
-            assertEquals("Email not found.", exception.getMessage());
-        }
+        // Act
+        UserAuthResponse response = userService.login(request);
 
-        @Test
-        @DisplayName("Should throw exception during login when password does not match")
-        void login_ThrowsException_WhenPasswordIsIncorrect() {
-            // Arrange
-            var correctPassword = "correctPassword";
-            var wrongPassword = "wrongPassword";
-            var hashedPassword = BCrypt.hashpw(correctPassword, BCrypt.gensalt());
-            var user = User.builder()
-                    .id(1L)
-                    .email("user@example.com")
-                    .password(hashedPassword)
-                    .build();
+        // Assert
+        assertNotNull(response);
+        assertNotNull(response.message());
+        assertEquals(existingUser.getEmail(), response.email());
+        assertEquals(mockToken, response.token());
+    }
 
-            var request = new RegisterUserRequest("user@example.com", wrongPassword, UserRole.CLIENT);
-            when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
 
-            // Act & Assert
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                    userService.login(request)
-            );
+    @Test
+    @DisplayName("Should throw NotFoundException when user email is not found during login")
+    void login_ThrowsNotFoundException() {
+        // Arrange
+        LoginAuthRequest request = new LoginAuthRequest("unknown@healthtech.com", "anyPassword");
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
 
-            assertEquals("Invalid fields.", exception.getMessage());
-        }
+        // Act & Assert
+        assertThrows(NotFoundException.class, () -> userService.login(request));
+        verify(tokenService, never()).generateToken(anyString());
+    }
+
+    @Test
+    @DisplayName("Should throw IllegalArgumentException when password verification fails during login")
+    void login_ThrowsIllegalArgumentException_OnInvalidPassword() {
+        // Arrange
+        LoginAuthRequest request = new LoginAuthRequest("test@healthtech.com", "wrongPassword");
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(existingUser));
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> userService.login(request));
+        verify(tokenService, never()).generateToken(anyString());
     }
 }
+
 

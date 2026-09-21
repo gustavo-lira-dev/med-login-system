@@ -58,7 +58,6 @@ public class AppointmentService {
 
     @Transactional(rollbackOn = Exception.class)
     public AppointmentResponse editAppointment(Long id, RequestAppointment request) {
-        // 1. Database lookups happen securely inside the service boundary
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Appointment not found"));
 
@@ -82,7 +81,6 @@ public class AppointmentService {
 
         appointmentRepository.save(appointment);
 
-        // 2. Returns the correct, real data (Medic Email instead of Medic ID string)
         return new AppointmentResponse(
                 "Appointment successfully updated; send an email to your medic!",
                 request.scheduledDate(),

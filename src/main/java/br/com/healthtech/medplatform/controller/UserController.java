@@ -1,5 +1,6 @@
 package br.com.healthtech.medplatform.controller;
 
+import br.com.healthtech.medplatform.dto.request.LoginAuthRequest;
 import br.com.healthtech.medplatform.dto.request.RegisterUserRequest;
 import br.com.healthtech.medplatform.dto.response.UserAuthResponse;
 import br.com.healthtech.medplatform.service.serviceclass.UserService;
@@ -26,9 +27,8 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserAuthResponse> login(@RequestBody @Valid RegisterUserRequest request) {
+    public ResponseEntity<UserAuthResponse> login(@RequestBody @Valid LoginAuthRequest request) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(userService.login(request));
     }
-
 }

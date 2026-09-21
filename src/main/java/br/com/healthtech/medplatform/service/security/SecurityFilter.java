@@ -29,6 +29,11 @@ public class SecurityFilter extends OncePerRequestFilter { // Grants the filter 
         // Extracts token from request header
         String token = recoverToken(request);
 
+        if (token == null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         if (token != null) {
             // Uses TokenService class method to validate the token
             String email = tokenService.validateToken(token);
@@ -62,7 +67,7 @@ public class SecurityFilter extends OncePerRequestFilter { // Grants the filter 
             return null;
         }
 
-        // Removes the 'Bearer ' part of the token, returning just a
+        // Removes the 'Bearer ' part of the token, returning just the token content
         return authHeader.replace("Bearer ", "");
     }
 }
